@@ -48,7 +48,7 @@ In the second dataset "PFW_count_site_data_public.csv", I focused on **yard type
 
 -   **Completeness**: The dataset is well-structured but contains some missing values, such as snow_dep_atleat.
 -   **Accuracy**: Since the data is sourced from citizen scientists, there might exit observer bias, affecting species count reliability. Additionally, bird observations are not conducted under standardized conditions - some observations last fewer minute while others span several hours. The variation in observation time may introduce bias, as longer observation times may result in higher recorded birds counts.
--   Timeliness: The data is collected annually and it includes records at monthly, and daily level, which allows both long-term and short-term analysis. However, it only covers the period November to April, with no data available for Summer month.
+-   **Timeliness**: The data is collected annually and it includes records at monthly, and daily level, which allows both long-term and short-term analysis. However, it only covers the period November to April, with no data available for Summer month.
 
 # 2. Data Handling Section
 
@@ -239,7 +239,8 @@ a <- ggplot(data = yearly_observations , mapping = aes (x = Year,
        title = "Figure 1. Total Bird Observation Per year" 
        # main title of figure
        ) + #title of legend
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(plot.title = element_text(size = 5, face = "bold"),
+    axis.text.x = element_text(angle = 90, hjust = 1))
 
 # summarize total observations of each month
 
@@ -255,7 +256,8 @@ b <- ggplot(data = monthly_observations , mapping = aes (x = Month, y = total_bi
        title = "Figure 2. Total Bird Observation Per month" 
        # main title of figure
        ) + #title of legend
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(plot.title = element_text(size = 5, face = "bold"),
+    axis.text.x = element_text(angle = 90, hjust = 1))
 
 # combine plots
 
@@ -275,7 +277,8 @@ ggplot(data = df_long) + geom_point(aes(x = snow_dep_atleast, y= how_many,
        title = "Figure 3. Bird Observation vs. Minmum Snow Depth vs. Yard Type" 
        # main title of figure
        ) + #title of legend
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(plot.title = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 90, hjust = 1))
 
 ```
 
@@ -300,7 +303,8 @@ scale_fill_manual(values = c("2020" = "#999ccc", "2021" = "#660099"))+
   labs(title = "Total Bird Observations of Top 10 Provinces",
        x = "Province",
        y = "Total Birds Observation") + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(plot.title = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 ### 3.1.4 Plot top 10 provinces with the highest bird observations
@@ -317,7 +321,9 @@ scale_fill_manual(values = c("2020" = "#CCC660", "2021" = "#663300"))+
   labs(title = "Total Bird Observations of Top 10 Bird Species",
        x = "Bird Species",
        y = "Total Birds Observation") + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(
+    plot.title = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 90, hjust = 1))
 
 ```
 
