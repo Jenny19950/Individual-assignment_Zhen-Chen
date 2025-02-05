@@ -1,7 +1,13 @@
 ---
 title: "individual assignment"
 subtitle: "Zhen Chen"
-format: html
+format: pdf
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+  - \RecustomVerbatimEnvironment{Verbatim}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
 # 1. Data Set Overview
@@ -51,20 +57,25 @@ In the second dataset "PFW_count_site_data_public.csv", I focused on **yard type
 ### 2.1.1 Load package and import data
 
 ```{r}
+#| message: false
+#| warning: false
 # install and load necessary package
 library(readr)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(patchwork)
-install.packages("stringr") # for spatial visualization
+# for spatial visualization
+install.packages("stringr",repos = "https://cloud.r-project.org/") 
 library(stringr)
 ```
 
 ```{r}
+#| message: false
+#| warning: false
 # load data
 PFW_2021_public <- read_csv("PFW_2021_public.csv")
-PFW_count_site_data_public_2021 <- read_csv("PFW_count_site_data_public_2021")
+PFW_count_site_data_public_2021 <- read_csv("PFW_count_site_data_public_2021.csv")
 View(PFW_2021_public)
 View(PFW_count_site_data_public_2021)
 
@@ -74,10 +85,13 @@ View(PFW_count_site_data_public_2021)
 
 ```{r}
 # combine two data set by loc_id variable
+# there is no year variable in PFW_count_site_data_public_2021,so we extract year from the variable "proj_period_id by using "str_extract"
 
 df <- PFW_2021_public %>% mutate(Year = as.character(Year)) %>%
-  inner_join(PFW_count_site_data_public_2021 %>% mutate(Year = str_extract(proj_period_id, "\\d{4}")) ## there is no year variable in PFW_count_site_data_public_2021, so we extract year from the variable "proj_period_id by using "str_extract"
-                                                                                                     %>% filter(proj_period_id %in% c("PFW_2020", "PFW_2021")) # there are other years data in PFW_count_site_data_public_2021, so we filter the data in 2020 and 2021
+  inner_join(PFW_count_site_data_public_2021 %>% mutate(Year = str_extract(proj_period_id
+                                                                           , "\\d{4}")) %>%
+               filter(proj_period_id %in% c("PFW_2020", "PFW_2021")) 
+             # there are other years data in PFW_count_site_data_public_2021, so we filter the data in 2020 and 2021
                                       %>% select (Year,loc_id, yard_type_pavement, yard_type_garden, yard_type_landsca, yard_type_woods, yard_type_desert), by = c("Year","loc_id")) # use inner_join to retain only rows in both set
 
 df_key_variable <- df %>% select(loc_id, Year, Month, latitude, longitude, subnational1_code, species_code, how_many, effort_hrs_atleast, snow_dep_atleast,  yard_type_pavement, yard_type_garden, yard_type_landsca, yard_type_woods, yard_type_desert) # select key variables
@@ -87,7 +101,8 @@ df_key_variable <- df %>% select(loc_id, Year, Month, latitude, longitude, subna
 ### 2.1.3 Handle missing values
 
 ```{r}
-df_key_variable <- df_key_variable %>% na.omit(df_key_variable) #using na.omit to delete all Na values
+#using na.omit to delete all Na values
+df_key_variable <- df_key_variable %>% na.omit(df_key_variable) 
 ```
 
 ### 2.1.4 Convert from wide to long format with pivot_longer
@@ -120,6 +135,7 @@ df_long <- df_key_variable %>%
 
 ```{r}
 #| echo: true
+#| warning: false
 
 # check the distinct values for certain variables
 n_distinct(df_long$loc_id)
@@ -129,30 +145,39 @@ n_distinct(df_long$species_code)
 n_distinct(df_long$effort_hrs_atleast)
 
 # summarize total bird observation every year
-yearly_observations <- df_long %>% group_by(Year) %>% summarize(total_birds_per_year = sum(how_many))
+yearly_observations <- df_long %>% group_by(Year) %>% 
+  summarize(total_birds_per_year = sum(how_many))
 print(yearly_observations)
 
 # summarize total bird observations of each month
 
-monthly_observations <- df_long %>% group_by(Month) %>% summarize(total_birds_per_month = sum(how_many))
+monthly_observations <- df_long %>% group_by(Month) %>%
+  summarize(total_birds_per_month = sum(how_many))
 print(monthly_observations)
 
 
 # summarize total observations of each bird species
-species_observations <- df_long %>% group_by(species_code, Year) %>% ## group by bird species
-  summarize(total_bird_per_species = sum(how_many)) # count bird observations of each species
+species_observations <- df_long %>% group_by(species_code, Year) %>% 
+  # group by bird species
+  summarize(total_bird_per_species = sum(how_many)) 
+# count bird observations of each species
 head(species_observations)
 
 # filter out top 10 bird species with highest bird observations
 
 top_10_species <- species_observations %>%
-  group_by(Year) %>%  # select within group first
-  slice_max(total_bird_per_species, n = 10) # select the top 10 species with the highest total bird observation per year
+  group_by(Year) %>% 
+  # select within group first
+  slice_max(total_bird_per_species, n = 10) 
+# select the top 10 species with the highest total bird observation per year
 
 # summarize average bird observations of each minimum snow depth
-snow_depth_observations <- df_long %>% filter(type == 1) %>%  # Only keep rows with type = 1
-  group_by(snow_dep_atleast, yard_type) %>% ## group by minimum snow depth and yard type
-  summarize(average_bird_observations = mean(how_many)) # count bird observations of each species
+snow_depth_observations <- df_long %>% filter(type == 1) %>%  
+  # Only keep rows with type = 1
+  group_by(snow_dep_atleast, yard_type) %>% 
+  # group by minimum snow depth and yard type
+  summarize(average_bird_observations = mean(how_many)) 
+# count bird observations of each species
 head(snow_depth_observations)
 
 
@@ -161,8 +186,10 @@ yearly_province_observations <- df_long %>% group_by(Year, subnational1_code) %>
 
 # filter out top 10 provinces with highest bird observations
 
-top_10_yearly_province_observations <- yearly_province_observations %>%   group_by(Year) %>%  # select within group first
-  slice_max(total_birds_per_year_province, n = 10) # select the top 10 provinces with the highest total bird observation per year
+top_10_yearly_province_observations <- yearly_province_observations %>%
+  group_by(Year) %>%  # select within group first
+  slice_max(total_birds_per_year_province, n = 10) 
+# select the top 10 provinces with the highest total bird observation per year
 head(yearly_province_observations)
 
 
@@ -202,10 +229,15 @@ We created two bar plots to analyze yearly and monthly trends in bird observatio
 # convert year from numeric to factor
 yearly_observations$Year <- as.factor(yearly_observations$Year)
 
-a <- ggplot(data = yearly_observations , mapping = aes (x = Year, y = total_birds_per_year, fill = Year)) + geom_bar(stat = "identity") + #define the stats, as we have provided the y value, we need to use stat = "identity"
+a <- ggplot(data = yearly_observations , mapping = aes (x = Year, 
+                                                        y = total_birds_per_year, 
+                                                        fill = Year)) + 
+  geom_bar(stat = "identity") + 
+  #define the stats, as we have provided the y value, we need to use stat = "identity"
   labs(x = "Year", # x axis title
        y = "Total bird observations", # y axis title
-       title = "Figure 1. Total Bird Observation Per year" # main title of figure
+       title = "Figure 1. Total Bird Observation Per year" 
+       # main title of figure
        ) + #title of legend
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
@@ -214,10 +246,14 @@ a <- ggplot(data = yearly_observations , mapping = aes (x = Year, y = total_bird
 # convert month from numeric to factor
 monthly_observations$Month <- as.factor(monthly_observations$Month)
 
-b <- ggplot(data = monthly_observations , mapping = aes (x = Month, y = total_birds_per_month, fill = Month)) + geom_bar(stat = "identity") + #define the stats, as we have provided the y value, we need to use stat = "identity"
+b <- ggplot(data = monthly_observations , mapping = aes (x = Month, y = total_birds_per_month, fill = Month)) +
+  geom_bar(stat = "identity") + 
+  #define the stats, as we have provided the y value, we need to use stat = "identity"
   labs(x = "Month", # x axis title
-       y = "Total bird observations", # y axis title
-       title = "Figure 2. Total Bird Observation Per month" # main title of figure
+       y = "Total bird observations", 
+       # y axis title
+       title = "Figure 2. Total Bird Observation Per month" 
+       # main title of figure
        ) + #title of legend
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
@@ -226,34 +262,27 @@ b <- ggplot(data = monthly_observations , mapping = aes (x = Month, y = total_bi
 patchwork::wrap_plots(a,b)
 ```
 
-### 3.1.2 plot a point plot containing snow_depth and bird observations
+### 3.1.2 Plot a point plot containing snow_depth and bird observations
+
+I tried to display the relationship between snow depth and the number of bird observations. Meanwhile, i use different colors and shapes to represent various types, but the figure seems look not so good, because many points are overlapped.
 
 ```{r}
 #| echo: true
-ggplot(data = df_long) + geom_point(aes(x = snow_dep_atleast, y= how_many, shape = yard_type, color=yard_type)) +
+ggplot(data = df_long) + geom_point(aes(x = snow_dep_atleast, y= how_many,
+                                        shape = yard_type, color=yard_type)) +
   labs(x = "Minmum snow depth", # x axis title
-       y = "Total bird observations", # y axis title
-       title = "Figure 3. Toal Bird Observation vs. Minmum Snow Depth vs. Yard Type" # main title of figure
+       y = "Bird observations", # y axis title
+       title = "Figure 3. Bird Observation vs. Minmum Snow Depth vs. Yard Type" 
+       # main title of figure
        ) + #title of legend
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ```
 
-## 3.1.3
-
-```{r}
-ggplot(data = df_long , mapping = aes (x = effort_hrs_atleast, y = how_many, color = season)) + geom_point() + 
-  labs(x = "minmum observation time", # x axis title
-       y = "the maximum numbder of bird observations", # y axis title
-       title = "Figure", # main title of figure
-       color = "Season") + #title of legend
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
-## tell ggplot to visualize the data as a line plot, studying how the amount of bird observations change over season in each year
+```         
 ```
 
-### 3.1.4 Create a bar chart of top 10 provinces with the highest bird observations
+### 3.1.3 Plot top 10 provinces with the highest bird observations
 
 We display regional differences in bird observations across provinces and we use faceting to provide a clear, per-year breakdown of the data. As shown in the figure, US-NY has the highest bird observations and it is followed by CA-ON. In 2021, CA-ON has the highest bird observations while US-IL has the lowest.
 
@@ -264,7 +293,9 @@ We display regional differences in bird observations across provinces and we use
 
 # top 10 province
 
-ggplot(data = top_10_yearly_province_observations, mapping = aes(x = subnational1_code, y = total_birds_per_year_province, fill = as.factor(Year))) + geom_col() + facet_wrap(~Year) + # facet in two dimension
+ggplot(data = top_10_yearly_province_observations, mapping = aes(x = subnational1_code, y = total_birds_per_year_province, fill = as.factor(Year))) +
+  geom_col() +
+  facet_wrap(~Year) + # facet in two dimension
 scale_fill_manual(values = c("2020" = "#999ccc", "2021" = "#660099"))+
   labs(title = "Total Bird Observations of Top 10 Provinces",
        x = "Province",
@@ -272,14 +303,16 @@ scale_fill_manual(values = c("2020" = "#999ccc", "2021" = "#660099"))+
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-### 3.1.5  A barplot of top 10 provinces with the highest bird observations
+### 3.1.4 Plot top 10 provinces with the highest bird observations
 
 We display species differences in bird observations and we use faceting to provide a clear, per-year breakdown of the data. As shown in the figure, the overall bird observations of top 10 species in 2020 is much lower than that in 2021. In 2020, houspa has the highest bird observations while comred is the highest in 2021.
 
 ```{r}
 # top 10 bird species
 
-ggplot(data = top_10_species, mapping = aes(x = species_code, y = total_bird_per_species, fill = as.factor(Year))) + geom_col() + facet_wrap(~Year)+ # facet in two dimension
+ggplot(data = top_10_species, mapping = aes(x = species_code, y = total_bird_per_species, fill = as.factor(Year))) + geom_col() + 
+  facet_wrap(~Year)+ 
+  # facet in two dimension
 scale_fill_manual(values = c("2020" = "#CCC660", "2021" = "#663300"))+
   labs(title = "Total Bird Observations of Top 10 Bird Species",
        x = "Bird Species",
@@ -288,29 +321,15 @@ scale_fill_manual(values = c("2020" = "#CCC660", "2021" = "#663300"))+
 
 ```
 
-### 3.1. 6 A violinplot to compare bird count distribution across different seasons
-
-We plot
-
-```{r}
-#| echo: true
-ggplot(df_long, aes(x = factor(season), y = how_many, fill = season)) + 
-  geom_violin() +
-  scale_fill_manual(values = c("Spring" = "green", "Fall" = "#FFFF00",
-                               "Winter" = "#CCCCCC")) +
-    labs(title = "Seasonal Variation in Bird Observations",
-       x = "Season",
-       y = "Total Birds Observed") 
-
-```
-
 ## 3.2 One spatial visualization using R
 
-Install and load necessary packages
+### 3.2.1 Install and load necessary packages
 
 ```{r}
+#| message: false
+#| warning: false
 library(sf) # vector data
-install.packages("geodata")
+install.packages("geodata", repos = "https://cloud.r-project.org/")
 library(geodata) # vector of roads
 install.packages("rnaturalearthhires", repos = "https://ropensci.r-universe.dev")
 library(rnaturalearth) # shape of usa
@@ -324,7 +343,9 @@ pcks <- list("dplyr",
 sapply(pcks, require, char = TRUE) ## check whether these packages are loaded or not
 ```
 
-Download vector data using "rnaturalearth" and save the shp locally. It can also be download from Natural Earth (https://www.naturalearthdata.com/downloads/)
+### 3.2.2 Download vector data
+
+We downloaded the vector data using "rnaturalearth" and save the shp locally. It can also be download from Natural Earth (https://www.naturalearthdata.com/downloads/)
 
 ```{r}
 ## Download shapfile for the USA
@@ -336,12 +357,11 @@ plot(usa)
 plot(usa[,1]) # Plot the unprojected USA map
 # Transform projection to a common US projection (Albers Equal Area)
 usa_proj <- sf::st_transform(usa, crs = 5070)  # EPSG:5070 is Albers Equal Area
-plot(usa_proj[,1]) # Plot the transformed USA map
-class(usa_proj)
-str(usa_proj)
-st_crs(usa_proj)$proj4string # Check projection details
 
 
+```
+
+```{r}
 ## load and transform water bodies for the USA
 
 lakes <- ne_download(scale = 10, type = "lakes", category = "physical", returnclass = "sf") 
@@ -349,16 +369,24 @@ lakes_proj <- st_transform(lakes, crs = 5070)
 
 ## extract coordinators for observational data
 df_long <- as.data.frame(df_long)
-observations <- df_long %>% dplyr::select(loc_id, latitude, longitude) %>% # extract coordinators for each loc_id
-  distinct(loc_id,.keep_all = TRUE) # remove duplicate and keep the first record of each loc_id
+observations <- df_long %>% dplyr::select(loc_id, latitude, longitude) %>% 
+  # extract coordinators for each loc_id
+  distinct(loc_id,.keep_all = TRUE) 
+# remove duplicate and keep the first record of each loc_id
 
 
 ## Convert observational data to an SF object
 observations_sf <- st_as_sf(observations, coords = c("longitude", "latitude"), crs = 4326) 
-observations_proj <- st_transform(observations_sf, crs = 5070)  # Transform to match map
+observations_proj <- st_transform(observations_sf, crs = 5070)  
+# Transform to match map
 
-## Create the USA map using ggplot2
+```
 
+### 3.2.3 Plot observations on the map using ggplot2
+
+As shown in the map, the observations concentrated in the eastern and central regions. Pew observations appear in the western USA and Alaska.
+
+```{r}
 ggplot() +
   # Plot USA boundaries
   geom_sf(data = usa_proj, fill = "antiquewhite", color = "black") +
@@ -375,7 +403,8 @@ ggplot() +
   # Add north arrow and scale bar
   annotation_north_arrow(location = "bl", which_north = "true",
                          height = unit(1, "cm"), width = unit(1, "cm"),
-                         pad_x = unit(0.5, "cm"), pad_y = unit(1, "cm"), style = north_arrow_fancy_orienteering, rotation = 0)
+                         pad_x = unit(0.5, "cm"), pad_y = unit(1, "cm"), 
+                         style = north_arrow_fancy_orienteering, rotation = 0) +
 
   # Keep new projection for ggplot, make sure ggplot uses the same projected coordinate system (EPSG: 5070) as the transformed spatial data, rather than defaulting back to WGS84.
   coord_sf(crs = st_crs(5070), datum = sf::st_crs(5070), expand = FALSE) +
@@ -393,10 +422,19 @@ ggplot() +
 
 ## 4.1 New skills acquired
 
+-   **Data wrangling.** I developed news skills of using tidyverse and dplyr to handle data, such as how to use select and filter functions to extract data, use group_by and summarize to categorize data and analyze data, and use pivot_longer to convert wide data format to longer format.
+
+-   **Visualization analysis.** I gained experience in creating different mapping and spatial visualization.
+
 ## 4.2 Challenges encountered and solutions
 
--   Choose the appropriate plot type
+-   **Fix errors in code execution.** It is very common to encounter errors during data manipulation. Usually I ask help from AI.
 
--   
+-   **Choose appropriate plot type.** I struggled with selecting the most suitable visualization for the dataset to convey insights effectively. This might be related to the experience and reading. reading and reviewing relevant studies can be a solution for improving understand of different plots
+
+-   **Generate map in R.** I followed the tutorial to create a map but it is still very struggling, I need more practice to be more familiar with different aesthetics and to create more informative maps.
 
 ## 4.3 Areas for future improvement
+
+-   Enhance ability to choose select the most appropriate plot type
+-   Enhance ability to create more informative maps
